@@ -387,10 +387,17 @@ async function send() {
                   :question="getTcvVisionArgs(tc)!.question"
                 />
 
-                <div v-else-if="tc.function?.name === 'terminal'">
+                <div
+                  class="flex flex-col sm:flex-row gap-3"
+                  v-else-if="tc.function?.name === 'terminal'"
+                >
                   <!-- ? uncomment the line below to see the raw tc data -->
                   <!-- <pre language="json" v-text="tc" /> -->
-                  <div class="mb-3 flex gap-3">
+                  <ChatComark
+                    class="flex-1"
+                    :markdown="`\`\`\`bash\n$ ${JSON.parse(tc.function?.arguments).command}\n${JSON.parse(tc.result).output || JSON.parse(tc.result).error}\n\`\`\``"
+                  />
+                  <div class="flex flex-col h-min gap-3">
                     <UBadge
                       :label="`Timeout: ${JSON.parse(tc.function?.arguments).timeout}s`"
                       variant="soft"
@@ -402,9 +409,6 @@ async function send() {
                       :color="JSON.parse(tc.result).exit_code === 0 ? 'success' : 'error'"
                     />
                   </div>
-                  <ChatComark
-                    :markdown="`\`\`\`bash\n$ ${JSON.parse(tc.function?.arguments).command}\n${JSON.parse(tc.result).output || JSON.parse(tc.result).error}\n\`\`\``"
-                  />
                 </div>
                 <ChatComark v-else-if="tc.function?.arguments" :markdown="tc.function.arguments" />
                 <div
@@ -469,23 +473,8 @@ async function send() {
         </UChatMessages>
 
         <!-- Chat prompt -->
-        <div class="sticky bottom-0 mt-5 border-t border-default bg-default p-4">
-          <UChatPrompt
-            v-model="input"
-            :status="streaming ? 'streaming' : 'ready'"
-            variant="subtle"
-            :ui="{ base: 'px-1.5' }"
-            @submit="send"
-          >
-            <template #footer>
-              <UChatPromptSubmit
-                :status="streaming ? 'streaming' : 'ready'"
-                :disabled="!input.trim()"
-                color="neutral"
-                size="sm"
-              />
-            </template>
-          </UChatPrompt>
+        <div class="sticky bottom-0 mt-5">
+          <ChatEditor />
         </div>
       </div>
     </template>

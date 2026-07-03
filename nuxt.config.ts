@@ -43,7 +43,13 @@ export default defineNuxtConfig({
 
   vite: {
     optimizeDeps: {
-      include: ["striptags", "date-fns"],
+      include: [
+        "@tiptap/extension-emoji",
+        "@tiptap/extension-text-align",
+        "date-fns",
+        "striptags", // CJS
+        "tiptap-extension-code-block-shiki",
+      ],
     },
   },
 
