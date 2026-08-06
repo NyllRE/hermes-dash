@@ -1,17 +1,17 @@
 <script setup lang="ts">
 const props = defineProps<{
-  title?: string;
-}>();
+  title?: string
+}>()
 
-const emit = defineEmits<{ close: [string | false] }>();
+const emit = defineEmits<{ close: [string | false] }>()
 
-const value = ref(props.title ?? "");
+const value = ref(props.title ?? "")
 
-const trimmed = computed(() => value.value.trim());
+const trimmed = computed(() => value.value.trim())
 
 function submit() {
-  if (!trimmed.value) return;
-  emit("close", trimmed.value);
+  if (!trimmed.value) return
+  emit("close", trimmed.value)
 }
 </script>
 

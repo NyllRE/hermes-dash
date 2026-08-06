@@ -2,6 +2,7 @@
 // Auto-discovers the _SESSION_TOKEN from the dashboard's SPA HTML so no
 // env var ceremony is needed — works the same way the official dashboard
 // SPA gets its token.
+import { assertDashboardAccess } from "../../utils/dashboardAuth";
 
 let discoveredToken: string | null = null;
 let discovering = false;
@@ -22,7 +23,7 @@ async function discoverToken(baseUrl: string): Promise<string | null> {
       if (discoveredToken) {
         console.log("[hermes-proxy] discovered session token");
       }
-    } catch (e) {
+    } catch {
       console.warn("[hermes-proxy] failed to discover token, requests may 401");
     } finally {
       discovering = false;
@@ -34,6 +35,9 @@ async function discoverToken(baseUrl: string): Promise<string | null> {
 }
 
 export default defineEventHandler(async (event) => {
+  // Auth gates token auto-discovery and the proxy itself.
+  assertDashboardAccess(event);
+
   const { hermesApiUrl } = useRuntimeConfig(event).public;
   const path = getRouterParam(event, "path") || "";
   const target = `${hermesApiUrl}/api/${path}`;

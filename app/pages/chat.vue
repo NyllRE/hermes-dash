@@ -1,40 +1,45 @@
 <script setup lang="ts">
-const input = ref("");
-const messages = ref<{ role: string; content: string }[]>([]);
-const streaming = ref(false);
+const input = ref("")
+const messages = ref<{ role: string, content: string }[]>([])
+const streaming = ref(false)
+const { csrf, headerName } = useCsrf()
 
 async function send() {
-  const text = input.value.trim();
-  if (!text) return;
+  const text = input.value.trim()
+  if (!text) return
 
-  messages.value.push({ role: "user", content: text });
-  input.value = "";
-  streaming.value = true;
+  messages.value.push({ role: "user", content: text })
+  input.value = ""
+  streaming.value = true
+
+  const headers: Record<string, string> = { "Content-Type": "application/json" }
+  // Send the CSRF token when one is present (nuxt-csurf protects POST).
+  if (csrf) headers[headerName] = csrf
 
   try {
     const res = await fetch("/api/chat/send", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         model: "hermes-agent",
-        messages: messages.value.map((m) => ({ role: m.role, content: m.content })),
-        stream: false,
-      }),
-    });
+        messages: messages.value.map(m => ({ role: m.role, content: m.content })),
+        stream: false
+      })
+    })
 
     if (!res.ok) {
-      const err = await res.text().catch(() => res.statusText);
-      messages.value.push({ role: "assistant", content: `Error: ${err}` });
-      return;
+      const err = await res.text().catch(() => res.statusText)
+      messages.value.push({ role: "assistant", content: `Error: ${err}` })
+      return
     }
 
-    const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content || "No response";
-    messages.value.push({ role: "assistant", content: reply });
-  } catch (e: any) {
-    messages.value.push({ role: "assistant", content: `Error: ${e.message}` });
+    const data = await res.json()
+    const reply = data.choices?.[0]?.message?.content || "No response"
+    messages.value.push({ role: "assistant", content: reply })
+  } catch (e: unknown) {
+    messages.value.push({ role: "assistant", content: `Error: ${e instanceof Error ? e.message : String(e)}` })
   } finally {
-    streaming.value = false;
+    streaming.value = false
   }
 }
 </script>

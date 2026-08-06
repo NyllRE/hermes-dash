@@ -1,36 +1,36 @@
 <script setup lang="ts">
-const input = ref("");
-const loading = ref(false);
-const chatId = crypto.randomUUID();
+const input = ref("")
+const loading = ref(false)
+const chatId = crypto.randomUUID()
 
-const { user } = useUserSession();
+const { user } = useUserSession()
 
 const greeting = computed(() => {
-  const hour = new Date().getHours();
-  let timeGreeting = "Good evening";
-  if (hour < 12) timeGreeting = "Good morning";
-  else if (hour < 18) timeGreeting = "Good afternoon";
+  const hour = new Date().getHours()
+  let timeGreeting = "Good evening"
+  if (hour < 12) timeGreeting = "Good morning"
+  else if (hour < 18) timeGreeting = "Good afternoon"
 
-  const name = user.value?.name?.split(" ")[0] || user.value?.username;
+  const name = user.value?.name?.split(" ")[0] || user.value?.username
 
-  return name ? `${timeGreeting}, ${name}` : `${timeGreeting}`;
-});
+  return name ? `${timeGreeting}, ${name}` : `${timeGreeting}`
+})
 
-const { dropzoneRef, dragging, open, files, uploading, uploadedFiles, removeFile, clearFiles } =
-  useFileUploadWithStatus(chatId);
+const { dropzoneRef, dragging, open, files, uploading, uploadedFiles, removeFile, clearFiles }
+  = useFileUploadWithStatus(chatId)
 
-const { csrf, headerName } = useCsrf();
+const { csrf, headerName } = useCsrf()
 
 async function createChat(prompt: string) {
-  input.value = prompt;
-  loading.value = true;
+  input.value = prompt
+  loading.value = true
 
-  const parts: Array<{ type: string; text?: string; mediaType?: string; url?: string }> = [
-    { type: "text", text: prompt },
-  ];
+  const parts: Array<{ type: string, text?: string, mediaType?: string, url?: string }> = [
+    { type: "text", text: prompt }
+  ]
 
   if (uploadedFiles.value.length > 0) {
-    parts.push(...uploadedFiles.value);
+    parts.push(...uploadedFiles.value)
   }
 
   const chat = await $fetch("/api/chats", {
@@ -40,50 +40,50 @@ async function createChat(prompt: string) {
       id: chatId,
       message: {
         role: "user",
-        parts,
-      },
-    },
-  });
+        parts
+      }
+    }
+  })
 
-  refreshNuxtData("chats");
-  navigateTo(`/chat/${chat?.id}`);
+  refreshNuxtData("chats")
+  navigateTo(`/chat/${chat?.id}`)
 }
 
 async function onSubmit() {
-  await createChat(input.value);
-  clearFiles();
+  await createChat(input.value)
+  clearFiles()
 }
 
 const quickChats = [
   {
     label: "Why use Nuxt UI?",
-    icon: "i-logos-nuxt-icon",
+    icon: "i-logos-nuxt-icon"
   },
   {
     label: "Help me create a Vue composable",
-    icon: "i-logos-vue",
+    icon: "i-logos-vue"
   },
   {
     label: "Tell me more about UnJS",
-    icon: "i-logos-unjs",
+    icon: "i-logos-unjs"
   },
   {
     label: "Why should I consider VueUse?",
-    icon: "i-logos-vueuse",
+    icon: "i-logos-vueuse"
   },
   {
     label: "Tailwind CSS best practices",
-    icon: "i-logos-tailwindcss-icon",
+    icon: "i-logos-tailwindcss-icon"
   },
   {
     label: "What is the weather in Bordeaux?",
-    icon: "i-lucide-sun",
+    icon: "i-lucide-sun"
   },
   {
     label: "Show me a chart of sales data",
-    icon: "i-lucide-line-chart",
-  },
-];
+    icon: "i-lucide-line-chart"
+  }
+]
 </script>
 
 <template>

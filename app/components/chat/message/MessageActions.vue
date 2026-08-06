@@ -1,48 +1,48 @@
 <script setup lang="ts">
-import type { UIMessage } from "ai";
-import { isFileUIPart } from "ai";
-import { useClipboard } from "@vueuse/core";
-import { getTextFromMessage } from "@nuxt/ui/utils/ai";
+import type { UIMessage } from "ai"
+import { isFileUIPart } from "ai"
+import { useClipboard } from "@vueuse/core"
+import { getTextFromMessage } from "@nuxt/ui/utils/ai"
 
 const props = defineProps<{
-  message: UIMessage & { createdAt?: string | Date };
-  streaming: boolean;
-  editing: boolean;
-  vote: boolean | null;
-}>();
+  message: UIMessage & { createdAt?: string | Date }
+  streaming: boolean
+  editing: boolean
+  vote: boolean | null
+}>()
 
 const formattedDate = computed(() => {
-  if (!props.message.createdAt) return null;
+  if (!props.message.createdAt) return null
 
-  const date = new Date(props.message.createdAt);
+  const date = new Date(props.message.createdAt)
 
   return {
     time: date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
     full: date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }),
-    iso: date.toISOString(),
-  };
-});
+    iso: date.toISOString()
+  }
+})
 
 const emit = defineEmits<{
-  edit: [message: UIMessage];
-  regenerate: [message: UIMessage];
-  vote: [message: UIMessage, isUpvoted: boolean];
-}>();
+  edit: [message: UIMessage]
+  regenerate: [message: UIMessage]
+  vote: [message: UIMessage, isUpvoted: boolean]
+}>()
 
-const hasFiles = computed(() => props.message.parts.some(isFileUIPart));
+const hasFiles = computed(() => props.message.parts.some(isFileUIPart))
 
-const clipboard = useClipboard();
+const clipboard = useClipboard()
 
-const copied = ref(false);
+const copied = ref(false)
 
 function copy() {
-  clipboard.copy(getTextFromMessage(props.message));
+  clipboard.copy(getTextFromMessage(props.message))
 
-  copied.value = true;
+  copied.value = true
 
   setTimeout(() => {
-    copied.value = false;
-  }, 2000);
+    copied.value = false
+  }, 2000)
 }
 </script>
 

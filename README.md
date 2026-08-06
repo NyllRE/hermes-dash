@@ -1,127 +1,120 @@
-# Nuxt AI Chatbot Template
+# Hermes Dash
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
+A local-first dashboard for observing and interacting with [Hermes Agent](https://hermes-agent.nousresearch.com) — the open-source AI agent framework by Nous Research. Built with Nuxt and Nuxt UI, it runs on your own machine and talks to a Hermes Agent that is also running on your machine.
 
-Full-featured AI Chatbot Nuxt application with authentication, chat history, collapsible sidebar, keyboard shortcuts, light & dark mode, command palette and more. Built using [Nuxt UI](https://ui.nuxt.com) components and integrated with [AI SDK](https://ai-sdk.dev) for a complete chat experience.
+**Hermes Dash is not a hosted Hermes service.** There is no cloud backend, no hosted model configuration, and nothing to deploy to make Hermes itself work. The app is a client-rendered frontend (`ssr: false`) plus a thin Nitro proxy that forwards requests to the local Hermes dashboard API.
 
-- [Live demo](https://chat-template.nuxt.dev/)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/nuxt)
+> Status: early development. The Hermes session viewer is actively being built out; treat it as a working prototype, not a stable release.
 
-<a href="https://chat-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/nuxt/chat-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/nuxt/chat-light.png">
-    <img alt="Nuxt AI Chatbot Template" src="https://ui.nuxt.com/assets/templates/nuxt/chat-light.png">
-  </picture>
-</a>
+## What it does
 
-> The chat template for Vue is on https://github.com/nuxt-ui-templates/chat-vue.
+- **Session viewer** — the sidebar lists recent Hermes sessions (searchable, with running/waiting/stalled/ended status badges). Open any session at `/session/[id]` to read the full transcript: messages, reasoning, tool calls and their results, rendered as markdown. While a session is active the view polls the backend every two seconds so it stays live as the agent works.
+- **Talk to a running agent** — from a session page you can send follow-up messages. Responses stream back from the local Hermes OpenAI-compatible endpoint (SSE).
+- **Debug overview** — `/debug` shows gateway status (version, gateway state, connected platforms, active sessions/agents), the current model info, and a table of recent sessions.
+- **Chat** — `/chat` and `/chat/[id]` retain the original AI SDK chat experience with chat history persisted in SQLite.
 
-## Features
+## Hermes dashboard vs. AI SDK chat
 
-- ⚡️ **Streaming AI messages** powered by the [AI SDK](https://ai-sdk.dev) with thinking/reasoning support
-- 🤖 **Multiple model support** — Claude Haiku 4.5, Gemini 3 Flash and GPT-5 Nano via [Vercel AI Gateway](https://vercel.com/docs/ai-gateway)
-- 🔍 **Web search** with built-in provider tools (Anthropic, OpenAI)
-- 📊 **Charts and weather** tool calling with rich UI rendering
-- 🔐 **Authentication** via GitHub OAuth using [nuxt-auth-utils](https://github.com/atinux/nuxt-auth-utils)
-- 💾 **Chat history persistence** using SQLite database ([Turso](https://turso.tech) in production) and [Drizzle ORM](https://orm.drizzle.team)
-- 📎 **File uploads** with drag & drop using [NuxtHub Blob](https://hub.nuxt.com/docs/blob) (requires authentication)
-- ✨ **Markdown rendering** with streaming code highlighting via [Comark](https://comark.dev)
+The repository contains two distinct experiences that share the same shell:
 
-## Quick Start
+| Area | Routes | Backend |
+| --- | --- | --- |
+| **Hermes dashboard** (session viewer) | `/session/[id]`, `/debug` | Local Hermes Agent, via the `/api/hermes/*` Nitro proxy |
+| **AI SDK chat** (retained template routes) | `/`, `/chat`, `/chat/[id]` | SQLite chat history + AI SDK chat endpoint |
 
-```bash
-npm create nuxt@latest -- -t ui/chat
-```
+The Hermes dashboard is the purpose of this project. The AI SDK chat routes, with their GitHub OAuth login, SQLite persistence and file uploads, are kept from the upstream Nuxt UI chat template this project started from.
 
-## Deploy your own
+## Prerequisites
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fchat&repository-name=chat&env=NUXT_OAUTH_GITHUB_CLIENT_ID%2CNUXT_OAUTH_GITHUB_CLIENT_SECRET%2CNUXT_SESSION_PASSWORD&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22tursocloud%22%2C%22productSlug%22%3A%22database%22%2C%22protocol%22%3A%22storage%22%7D%2C%7B%22type%22%3A%22blob%22%7D%5D&demo-title=Nuxt+Chat+Template&demo-description=An+AI+chatbot+template+with+GitHub+authentication+and+persistent+chat+history+powered+by+Vercel+AI+SDK.&demo-url=https%3A%2F%2Fchat-template.nuxt.dev&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fnuxt%2Fchat-dark.png)
+- **Node.js 22** (what CI runs on)
+- **pnpm** (the project is pinned to `pnpm@11.9.0` via `packageManager`)
+- **A running local Hermes Agent** with its dashboard API reachable (default: `http://127.0.0.1:8080`)
 
-## Setup
+## Configuration
 
-Make sure to install the dependencies:
+The dashboard assumes a Hermes Agent is running locally. All Hermes API traffic goes through a Nitro proxy (`server/api/hermes/[...path].ts`).
 
-```bash
-pnpm install
-```
+- **`NUXT_PUBLIC_HERMES_API_URL`** — base URL of the Hermes dashboard backend. Default: `http://127.0.0.1:8080` (defined in `nuxt.config.ts` under `runtimeConfig.public.hermesApiUrl`). Override it in `.env` or the environment if your Hermes backend listens elsewhere.
+- The proxy auto-discovers the backend's session token from the Hermes dashboard's SPA HTML (`__HERMES_SESSION_TOKEN__`) on first request, so no token environment variable is needed. Requests are forwarded with an `X-Hermes-Session-Token` header.
+- Sending a message from a session page posts to `/api/chat/send`, which forwards to the Hermes OpenAI-compatible server at `http://127.0.0.1:8642/v1/chat/completions` with model `hermes-agent` (streaming and non-streaming supported). This endpoint address is currently hardcoded.
 
-Run database migrations:
+The dashboard API endpoints (`/api/hermes/*`, `/api/chat/send`, `/api/files/read`) are gated by `assertDashboardAccess` (see `server/utils/dashboardAuth.ts`):
 
-```bash
-pnpm db:migrate
-```
+- **`NUXT_DASHBOARD_TOKEN`** — the shared secret required for dashboard API access. The dashboard API reads it from the `hermesdash_token` cookie; a missing or mismatched cookie is rejected with 401. Requests fail closed without it: non-loopback requests are always rejected, and in production so are loopback requests (the bypass is off by default there). Generate one with `openssl rand -hex 32` — do not deploy with an empty token.
+- **`NUXT_DASHBOARD_ALLOW_LOOPBACK`** — loopback bypass for requests from direct loopback peers (`127.0.0.1`, `::1`). Default: enabled in development (`pnpm dev`), **disabled in production**. Set it to `true` to explicitly allow the bypass in production (not recommended for anything reachable beyond your machine), or `false` to require the token even on localhost.
+- **`NUXT_DASHBOARD_FILE_ROOT`** — root directory served by `/api/files/read`. Defaults to the project root (`process.cwd()`); only image files inside this directory (after symlink resolution) are served. If you want to render Hermes images stored outside the project root (e.g. the Hermes state/images directory), set this to a root that contains those locations so they fall inside the served boundary.
 
-> [!NOTE]
-> In production, configure your database connection. On Vercel, add the [Turso integration](https://vercel.com/integrations/turso) to automatically provision `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
+Note for reverse proxies and port forwarding: loopback detection uses the request's direct socket peer address and ignores `X-Forwarded-For` (spoofable), so a same-host reverse proxy or a port-forward appears to the app as a loopback peer. That bypass is enabled by default only in development. In production the loopback bypass is off by default, so the proxy must set the `hermesdash_token` cookie (or forward the token) or every request is rejected with 401. Do not assume a same-host proxy is automatically safe: production deployments require the token from every peer, loopback included, unless you explicitly set `NUXT_DASHBOARD_ALLOW_LOOPBACK=true`.
 
-### AI Integration
+If the Hermes backend isn't running, the dashboard pages show connection errors, but the app itself still starts and the AI SDK chat routes keep working.
 
-This template uses the [Vercel AI SDK](https://ai-sdk.dev/) for streaming AI responses with support for multiple providers through [Vercel AI Gateway](https://vercel.com/docs/ai-gateway). When deployed on Vercel, the AI Gateway is configured automatically.
+## Getting started
 
-For local development, set your API key in `.env`:
+Start your local Hermes Agent first, then:
 
 ```bash
-AI_GATEWAY_API_KEY=<your-vercel-ai-gateway-api-key>
+pnpm install      # install dependencies (also runs `nuxt prepare`)
+pnpm db:migrate   # apply SQLite migrations (chat history)
+pnpm dev          # start the dev server on http://localhost:3000
 ```
 
-> [!TIP]
-> With [Vercel AI Gateway](https://vercel.com/docs/ai-gateway), you don't need individual API keys for OpenAI, Anthropic, etc. It provides a unified API to access hundreds of models through a single endpoint with automatic load balancing, fallbacks, and spend monitoring.
-
-### Authentication (Optional)
-
-This template uses [nuxt-auth-utils](https://github.com/atinux/nuxt-auth-utils) for authentication with GitHub OAuth.
-
-To enable authentication, [create a GitHub OAuth application](https://github.com/settings/applications/new) and set:
-
-```bash
-NUXT_OAUTH_GITHUB_CLIENT_ID=<your-github-oauth-app-client-id>
-NUXT_OAUTH_GITHUB_CLIENT_SECRET=<your-github-oauth-app-client-secret>
-NUXT_SESSION_PASSWORD=<your-password-minimum-32-characters>
-```
-
-### Blob Storage (Optional)
-
-This template uses [NuxtHub Blob](https://hub.nuxt.com/docs/blob) for file uploads, which supports multiple storage drivers:
-
-- **Local filesystem** (default for development, stored in `.data/blob`)
-- **[Vercel Blob](https://vercel.com/docs/vercel-blob)** (auto-configured when deployed to Vercel)
-- **[Cloudflare R2](https://hub.nuxt.com/docs/blob#set-a-driver)** (when deployed to Cloudflare)
-- **[Amazon S3](https://hub.nuxt.com/docs/blob#set-a-driver)** (with manual configuration)
-
-For **Vercel Blob**, assign a Blob Store to your project from the Vercel dashboard (Project → Storage), then set the token for local development:
-
-```bash
-BLOB_READ_WRITE_TOKEN=<your-vercel-blob-token>
-```
-
-> [!NOTE]
-> File uploads require authentication. See the [NuxtHub Blob documentation](https://hub.nuxt.com/docs/blob#set-a-driver) for configuring other storage drivers.
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-pnpm dev
-```
-
-## Production
-
-Build the application for production:
+Production build and preview:
 
 ```bash
 pnpm build
-```
-
-Locally preview production build:
-
-```bash
 pnpm preview
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Validation:
 
-## Renovate integration
+```bash
+pnpm lint         # oxlint
+pnpm typecheck    # nuxt typecheck
+pnpm build        # production build
+```
 
-Install [Renovate GitHub app](https://github.com/apps/renovate/installations/select_target) on your repository and you are good to go.
+Other scripts: `pnpm lint:fix`, `pnpm fmt`, `pnpm fmt:check`, `pnpm db:generate` (regenerate Drizzle migrations from the schema).
+
+## Routes
+
+| Route | Purpose |
+| --- | --- |
+| `/` | New-chat landing page (AI SDK chat) |
+| `/chat` | Chat list |
+| `/chat/[id]` | AI SDK chat thread (SQLite history) |
+| `/session/[id]` | Hermes session viewer — live polling while the session is active |
+| `/debug` | Hermes gateway status, model info, recent sessions |
+
+## Privacy & security
+
+Hermes Dash is local-first: in the default setup the Nuxt server and the Hermes backend talk over the loopback interface, and the app does not proxy traffic through third-party services. The session token is only ever forwarded to the configured local Hermes backend.
+
+A few honest caveats:
+
+- This is a self-hosted web app, not a hardened product. The dashboard API is protected by a shared-token cookie (`hermesdash_token`, see Configuration); the loopback exemption that skips the token is enabled by default only during development, so a production deployment requires the token from every peer. Anyone who can reach the app and obtain that token can read your agent's sessions.
+- The retained AI SDK chat routes keep the template's optional GitHub OAuth login (`NUXT_SESSION_PASSWORD`, `NUXT_OAUTH_GITHUB_CLIENT_ID`, `NUXT_OAUTH_GITHUB_CLIENT_SECRET`); the Hermes dashboard routes do not require login — remote access is gated by the dashboard token cookie instead.
+- CSRF protection is enabled (`nuxt-csurf`) for POST/PUT/PATCH/DELETE, except for a dev-only spyglass ingest endpoint.
+- If you expose the app beyond localhost, you are responsible for securing it (authentication, network access, HTTPS). The token cookie is sent over plain HTTP too, so serve the dashboard over HTTPS when accessing it remotely.
+
+## Project structure
+
+```
+app/
+  pages/                  # /, /chat, /chat/[id], /session/[id], /debug
+  components/session/     # session viewer UI (header, message content, tool calls)
+  composables/            # useHermes*, session polling, chat send (SSE)
+  types/hermes.ts         # Hermes API types
+  layouts/default.vue     # shared shell: saved chats + recent Hermes sessions sidebar
+server/
+  api/hermes/[...path].ts # proxy to the Hermes dashboard backend
+  api/chat/send.post.ts   # proxy to the Hermes OpenAI-compatible endpoint
+  api/files/read.get.ts   # image file serving (bound to NUXT_DASHBOARD_FILE_ROOT)
+  api/chats/...           # retained AI SDK chat history API
+  utils/dashboardAuth.ts  # access control shared by the dashboard API routes
+  db/                     # SQLite schema + Drizzle migrations
+nuxt.config.ts            # runtime config (incl. NUXT_PUBLIC_HERMES_API_URL default)
+```
+
+## License
+
+MIT — see [LICENSE](./LICENSE).

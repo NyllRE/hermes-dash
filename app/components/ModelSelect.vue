@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { model, models } = useModels();
+const { model, models } = useModels()
 </script>
 
 <template>

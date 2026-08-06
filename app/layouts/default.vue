@@ -1,43 +1,43 @@
 <script setup lang="ts">
-import type { DropdownMenuItem } from "@nuxt/ui";
+import type { DropdownMenuItem } from "@nuxt/ui"
 
-const { loggedIn, openInPopup } = useUserSession();
-const { renameChat, deleteChat } = useChatActions();
+const { loggedIn, openInPopup } = useUserSession()
+const { renameChat, deleteChat } = useChatActions()
 
-const sidebarOpen = ref(false);
-const searchOpen = ref(false);
+const sidebarOpen = ref(false)
+const searchOpen = ref(false)
 
 const { data: chats, refresh: refreshChats } = await useFetch("/api/chats", {
   key: "chats",
-  transform: (data) =>
-    data.map((chat) => ({
+  transform: data =>
+    data.map(chat => ({
       id: chat.id,
       label: chat.title || "Untitled",
       to: `/chat/${chat.id}`,
       icon: "i-lucide-message-circle",
-      createdAt: chat.createdAt,
-    })),
-});
+      createdAt: chat.createdAt
+    }))
+})
 
 // ── Hermes sessions sidebar ──
-const { data: hermesSessions, refresh: refreshHermes } = useHermesSessions(50);
+const { data: hermesSessions, refresh: refreshHermes } = useHermesSessions(50)
 
-const sessionSearch = ref("");
+const sessionSearch = ref("")
 
 const filteredSessions = computed(() => {
-  if (!hermesSessions.value?.sessions) return [];
-  const q = sessionSearch.value.toLowerCase().trim();
-  if (!q) return [];
+  if (!hermesSessions.value?.sessions) return []
+  const q = sessionSearch.value.toLowerCase().trim()
+  if (!q) return []
   return hermesSessions.value.sessions.filter(
-    (s) => s.title?.toLowerCase().includes(q) || s.preview?.toLowerCase().includes(q),
-  );
-});
+    s => s.title?.toLowerCase().includes(q) || s.preview?.toLowerCase().includes(q)
+  )
+})
 
 const hermesNavItems = computed(() => {
-  const source = sessionSearch.value ? filteredSessions.value : hermesSessions.value?.sessions;
-  if (!source?.length) return [];
+  const source = sessionSearch.value ? filteredSessions.value : hermesSessions.value?.sessions
+  if (!source?.length) return []
   return source.map((s) => {
-    const status = getSessionStatus(s);
+    const status = getSessionStatus(s)
     return {
       label: s.title || s.preview || "Untitled",
       to: `/session/${s.id}`,
@@ -45,85 +45,85 @@ const hermesNavItems = computed(() => {
       class: [!s.title ? "text-muted" : "", status.label === "ended" ? "opacity-60" : ""]
         .filter(Boolean)
         .join(" "),
-      badge: status,
-    };
-  });
-});
+      badge: status
+    }
+  })
+})
 
 onNuxtReady(async () => {
-  const first10 = (chats.value || []).slice(0, 10);
+  const first10 = (chats.value || []).slice(0, 10)
   for (const chat of first10) {
-    await $fetch(`/api/chats/${chat.id}`);
+    await $fetch(`/api/chats/${chat.id}`)
   }
-});
+})
 
 watch(loggedIn, () => {
-  refreshChats();
-  sidebarOpen.value = false;
-});
+  refreshChats()
+  sidebarOpen.value = false
+})
 
 // Auto-refresh Hermes sessions every 30s so new sessions appear in the sidebar
-let refreshInterval: ReturnType<typeof setInterval> | undefined;
+let refreshInterval: ReturnType<typeof setInterval> | undefined
 onMounted(() => {
-  refreshInterval = setInterval(() => refreshHermes(), 30000);
-});
+  refreshInterval = setInterval(() => refreshHermes(), 30000)
+})
 onUnmounted(() => {
-  if (refreshInterval) clearInterval(refreshInterval);
-});
+  if (refreshInterval) clearInterval(refreshInterval)
+})
 
 // Also refresh when navigating to a new route (new session might have been created)
-const route = useRoute();
+const route = useRoute()
 watch(
   () => route.fullPath,
   () => {
-    refreshHermes();
-  },
-);
+    refreshHermes()
+  }
+)
 
-const { groups } = useChats(chats);
+const { groups } = useChats(chats)
 
 const items = computed(() =>
   groups.value?.flatMap((group) => {
     return [
       {
         label: group.label,
-        type: "label" as const,
+        type: "label" as const
       },
-      ...group.items.map((item) => ({
+      ...group.items.map(item => ({
         ...item,
         slot: "chat" as const,
         icon: undefined,
-        class: item.label === "Untitled" ? "text-muted" : "",
-      })),
-    ];
-  }),
-);
+        class: item.label === "Untitled" ? "text-muted" : ""
+      }))
+    ]
+  })
+)
 
-function getChatActions(item: { id: string; label: string }): DropdownMenuItem[][] {
+function getChatActions(item: { id: string, label: string }): DropdownMenuItem[][] {
   return [
     [
       {
         label: "Rename",
         icon: "i-lucide-pencil",
-        onSelect: () => renameChat(item.id, item.label === "Untitled" ? "" : item.label),
-      },
+        onSelect: () => renameChat(item.id, item.label === "Untitled" ? "" : item.label)
+      }
     ],
     [
       {
         label: "Delete",
         icon: "i-lucide-trash",
         color: "error" as const,
-        onSelect: () => deleteChat(item.id),
-      },
-    ],
-  ];
+        onSelect: () => deleteChat(item.id)
+      }
+    ]
+  ]
 }
 
 defineShortcuts({
   meta_o: () => {
-    navigateTo("/");
-  },
-});
+    navigateTo("/")
+  }
+})
 </script>
 
 <template>

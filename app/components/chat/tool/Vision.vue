@@ -1,20 +1,20 @@
 <script setup lang="ts">
 const props = defineProps<{
-  imageUrl: string;
-  question: string;
-}>();
+  imageUrl: string
+  question: string
+}>()
 
-const servedUrl = computed(() => fileUrlToServed(props.imageUrl));
-const imageLoading = ref(true);
-const imageError = ref(false);
-const showModal = ref(false);
+const servedUrl = computed(() => fileUrlToServed(props.imageUrl))
+const imageLoading = ref(true)
+const imageError = ref(false)
+const showModal = ref(false)
 
 function openModal() {
-  if (!imageError.value) showModal.value = true;
+  if (!imageError.value) showModal.value = true
 }
 
 function closeModal() {
-  showModal.value = false;
+  showModal.value = false
 }
 </script>
 

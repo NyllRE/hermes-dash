@@ -1,9 +1,9 @@
 <script setup lang="ts">
-const { loggedIn } = useUserSession();
+const { loggedIn } = useUserSession()
 
 defineProps<{
-  open: () => void;
-}>();
+  open: () => void
+}>()
 </script>
 
 <template>

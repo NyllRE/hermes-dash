@@ -967,14 +967,6 @@
           }
         ],
         "@stylistic/quote-props": ["error", "consistent-as-needed"],
-        "@stylistic/quotes": [
-          "error",
-          "single",
-          {
-            "allowTemplateLiterals": "always",
-            "avoidEscape": false
-          }
-        ],
         "@stylistic/rest-spread-spacing": ["error", "never"],
         "@stylistic/semi": ["error", "never"],
         "@stylistic/semi-spacing": [
@@ -1063,7 +1055,6 @@
             "allow": "single-child"
           }
         ],
-        "@stylistic/jsx-quotes": "error",
         "@stylistic/jsx-tag-spacing": [
           "error",
           {

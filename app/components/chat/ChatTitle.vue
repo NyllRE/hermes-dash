@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import type { DropdownMenuItem } from "@nuxt/ui";
+import type { DropdownMenuItem } from "@nuxt/ui"
 
 const props = defineProps<{
-  chatId: string;
-  title?: string | null;
-  isOwner: boolean;
-}>();
+  chatId: string
+  title?: string | null
+  isOwner: boolean
+}>()
 
 const emit = defineEmits<{
-  "update:title": [title: string];
-}>();
+  "update:title": [title: string]
+}>()
 
-const { renameChat, deleteChat } = useChatActions();
+const { renameChat, deleteChat } = useChatActions()
 
-const displayTitle = computed(() => props.title || "Untitled");
+const displayTitle = computed(() => props.title || "Untitled")
 
 async function rename() {
-  const newTitle = await renameChat(props.chatId, props.title);
-  if (newTitle) emit("update:title", newTitle);
+  const newTitle = await renameChat(props.chatId, props.title)
+  if (newTitle) emit("update:title", newTitle)
 }
 
 const items = computed<DropdownMenuItem[][]>(() => [
@@ -25,18 +25,18 @@ const items = computed<DropdownMenuItem[][]>(() => [
     {
       label: "Rename",
       icon: "i-lucide-pencil",
-      onSelect: rename,
-    },
+      onSelect: rename
+    }
   ],
   [
     {
       label: "Delete",
       icon: "i-lucide-trash",
       color: "error" as const,
-      onSelect: () => deleteChat(props.chatId),
-    },
-  ],
-]);
+      onSelect: () => deleteChat(props.chatId)
+    }
+  ]
+])
 </script>
 
 <template>

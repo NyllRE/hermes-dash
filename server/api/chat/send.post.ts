@@ -1,9 +1,12 @@
 // Proxy chat completions to the Hermes OpenAI-compatible API server (port 8642).
 // Supports both streaming (SSE) and non-streaming responses.
 
-import { defineEventHandler, readBody, createError, setHeader } from "h3";
+import { defineEventHandler, readBody, createError, setHeader, H3Error } from "h3";
+import { assertDashboardAccess } from "../../utils/dashboardAuth";
 
 export default defineEventHandler(async (event) => {
+  assertDashboardAccess(event);
+
   const body = await readBody(event);
   const messages = body?.messages || [];
   const stream = body?.stream !== false;
@@ -43,7 +46,6 @@ export default defineEventHandler(async (event) => {
     setHeader(event, "Connection", "keep-alive");
 
     const reader = response.body.getReader();
-    const encoder = new TextEncoder();
     const pump = async () => {
       try {
         while (true) {
@@ -59,12 +61,12 @@ export default defineEventHandler(async (event) => {
       }
     };
     pump();
-  } catch (e: any) {
-    if (e.statusCode) throw e;
+  } catch (e: unknown) {
+    if (e instanceof H3Error) throw e;
     throw createError({
       statusCode: 503,
       statusMessage: "Hermes API server not reachable on port 8642",
-      message: e.message,
+      message: e instanceof Error ? e.message : String(e),
     });
   }
 });

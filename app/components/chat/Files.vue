@@ -1,11 +1,11 @@
 <script setup lang="ts">
 defineProps<{
-  files: FileWithStatus[];
-}>();
+  files: FileWithStatus[]
+}>()
 
 defineEmits<{
-  remove: [id: string];
-}>();
+  remove: [id: string]
+}>()
 </script>
 
 <template>

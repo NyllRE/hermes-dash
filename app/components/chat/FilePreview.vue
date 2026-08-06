@@ -1,52 +1,52 @@
 <script setup lang="ts">
-import type { AvatarProps } from "@nuxt/ui";
-import { AnimatePresence, Motion } from "motion-v";
+import type { AvatarProps } from "@nuxt/ui"
+import { AnimatePresence, Motion } from "motion-v"
 
 interface ChatFilePreviewProps {
-  name: string;
-  type: string;
-  previewUrl?: string;
-  size?: AvatarProps["size"];
-  status?: "idle" | "uploading" | "uploaded" | "error";
-  error?: string;
-  removable?: boolean;
+  name: string
+  type: string
+  previewUrl?: string
+  size?: AvatarProps["size"]
+  status?: "idle" | "uploading" | "uploaded" | "error"
+  error?: string
+  removable?: boolean
 }
 
 const props = withDefaults(defineProps<ChatFilePreviewProps>(), {
   status: "idle",
   removable: false,
-  size: "2xl",
-});
+  size: "2xl"
+})
 
 const emit = defineEmits<{
-  remove: [];
-}>();
+  remove: []
+}>()
 
-const open = ref(false);
+const open = ref(false)
 
-const isZoomable = computed(() => props.type.startsWith("image/") && props.previewUrl);
+const isZoomable = computed(() => props.type.startsWith("image/") && props.previewUrl)
 
 function openZoom() {
   if (isZoomable.value) {
-    open.value = true;
+    open.value = true
   }
 }
 
 function closeZoom() {
-  open.value = false;
+  open.value = false
 }
 
 defineShortcuts({
-  escape: closeZoom,
-});
+  escape: closeZoom
+})
 
 onMounted(() => {
-  window.addEventListener("scroll", closeZoom, true);
-});
+  window.addEventListener("scroll", closeZoom, true)
+})
 
 onUnmounted(() => {
-  window.removeEventListener("scroll", closeZoom, true);
-});
+  window.removeEventListener("scroll", closeZoom, true)
+})
 </script>
 
 <template>

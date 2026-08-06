@@ -10,7 +10,7 @@ const toolIconMap: Record<string, string> = {
   terminal: "hugeicons:bash",
   read_file: "ph:file-text",
   write_file: "ph:pencil-line",
-  patch: "ph:file-diff",
+  patch: "material-symbols-light:difference-outline",
   execute_code: "ph:code",
   web_search: "ph:globe",
   web_extract: "ph:link-simple",

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Motion } from "motion-v";
+import { Motion } from "motion-v"
 
-const { loggedIn } = useUserSession();
+const { loggedIn } = useUserSession()
 
 defineProps<{
-  show: boolean;
-}>();
+  show: boolean
+}>()
 </script>
 
 <template>

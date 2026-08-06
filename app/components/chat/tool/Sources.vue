@@ -1,7 +1,7 @@
 <script setup lang="ts">
 defineProps<{
-  sources: Source[];
-}>();
+  sources: Source[]
+}>()
 </script>
 
 <template>

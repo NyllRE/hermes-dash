@@ -1,35 +1,35 @@
 <script setup lang="ts">
 const props = defineProps<{
-  invocation: WeatherUIToolInvocation;
-}>();
+  invocation: WeatherUIToolInvocation
+}>()
 
 const color = computed(() => {
   return (
     {
       "output-available":
         "bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600 dark:from-sky-500 dark:via-blue-600 dark:to-indigo-700 text-white",
-      "output-error": "bg-muted text-error",
+      "output-error": "bg-muted text-error"
     }[props.invocation.state as string] || "bg-muted text-white"
-  );
-});
+  )
+})
 
 const icon = computed(() => {
   return (
     {
       "input-available": "i-lucide-cloud-sun",
-      "output-error": "i-lucide-triangle-alert",
+      "output-error": "i-lucide-triangle-alert"
     }[props.invocation.state as string] || "i-lucide-loader-circle"
-  );
-});
+  )
+})
 
 const message = computed(() => {
   return (
     {
       "input-available": "Loading weather data...",
-      "output-error": "Can't get weather data, please try again later",
+      "output-error": "Can't get weather data, please try again later"
     }[props.invocation.state as string] || "Loading weather data..."
-  );
-});
+  )
+})
 </script>
 
 <template>

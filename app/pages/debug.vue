@@ -1,47 +1,48 @@
 <script setup lang="ts">
-import type { TableColumn } from "@nuxt/ui";
-import { formatDistanceToNow } from "date-fns";
+import type { TableColumn } from "@nuxt/ui"
+import type { HermesSession } from "~/types/hermes"
+import { formatDistanceToNow } from "date-fns"
 
 const {
   data: status,
   pending: statusPending,
   error: statusError,
-  refresh: refreshStatus,
-} = useHermesStatus();
+  refresh: refreshStatus
+} = useHermesStatus()
 const {
   data: model,
   pending: modelPending,
   error: modelError,
-  refresh: refreshModel,
-} = useHermesModel();
+  refresh: refreshModel
+} = useHermesModel()
 const {
   data: sessions,
   pending: sessionsPending,
   error: sessionsError,
-  refresh: refreshSessions,
-} = useHermesSessions(10);
+  refresh: refreshSessions
+} = useHermesSessions(10)
 
 function refreshAll() {
-  refreshStatus();
-  refreshModel();
-  refreshSessions();
+  refreshStatus()
+  refreshModel()
+  refreshSessions()
 }
 
 const platformList = computed(() => {
-  if (!status.value?.gateway_platforms) return [];
+  if (!status.value?.gateway_platforms) return []
   return Object.entries(status.value.gateway_platforms).map(([key, val]) => ({
     name: key,
     display: val.display_name ?? key,
-    connected: val.connected,
-  }));
-});
+    connected: val.connected
+  }))
+})
 
 const gatewayBadgeColor = computed(() => {
-  const s = status.value?.gateway_state;
-  if (s === "running") return "success" as const;
-  if (s && ["starting", "draining"].includes(s)) return "warning" as const;
-  return "neutral" as const;
-});
+  const s = status.value?.gateway_state
+  if (s === "running") return "success" as const
+  if (s && ["starting", "draining"].includes(s)) return "warning" as const
+  return "neutral" as const
+})
 
 const sessionColumns: TableColumn<HermesSession>[] = [
   { accessorKey: "id", header: "ID", minSize: 140 },
@@ -54,8 +55,8 @@ const sessionColumns: TableColumn<HermesSession>[] = [
   { accessorKey: "started_at", header: "Started", minSize: 120 },
   { accessorKey: "last_active", header: "Last Active", minSize: 160 },
   { accessorKey: "ended_at", header: "Ended", minSize: 120 },
-  { accessorKey: "archived", header: "Archived", minSize: 100 },
-];
+  { accessorKey: "archived", header: "Archived", minSize: 100 }
+]
 </script>
 
 <template>
@@ -199,12 +200,12 @@ const sessionColumns: TableColumn<HermesSession>[] = [
               }"
             >
               <template #id-cell="{ row }">
-                <span class="font-mono text-xs">{{ (row.original as any).id?.slice(0, 12) }}…</span>
+                <span class="font-mono text-xs">{{ row.original.id?.slice(0, 12) }}…</span>
               </template>
 
               <template #source-cell="{ row }">
                 <UBadge
-                  :label="(row.original as any).source"
+                  :label="row.original.source"
                   size="sm"
                   variant="subtle"
                   color="neutral"
@@ -212,17 +213,17 @@ const sessionColumns: TableColumn<HermesSession>[] = [
               </template>
 
               <template #title-cell="{ row }">
-                <UTooltip :text="(row.original as any).title || 'Untitled'" class="block min-w-0">
+                <UTooltip :text="row.original.title || 'Untitled'" class="block min-w-0">
                   <span class="truncate block text-sm font-medium">{{
-                    (row.original as any).title || "Untitled"
+                    row.original.title || "Untitled"
                   }}</span>
                 </UTooltip>
               </template>
 
               <template #is_active-cell="{ row }">
                 <UBadge
-                  :label="(row.original as any).is_active ? 'Active' : 'Inactive'"
-                  :color="(row.original as any).is_active ? 'success' : 'neutral'"
+                  :label="row.original.is_active ? 'Active' : 'Inactive'"
+                  :color="row.original.is_active ? 'success' : 'neutral'"
                   variant="soft"
                   size="sm"
                 />
@@ -230,18 +231,18 @@ const sessionColumns: TableColumn<HermesSession>[] = [
 
               <template #message_count-cell="{ row }">
                 <span class="font-mono text-sm font-semibold">{{
-                  (row.original as any).message_count
+                  row.original.message_count
                 }}</span>
               </template>
 
               <template #preview-cell="{ row }">
                 <UTooltip
-                  v-if="(row.original as any).preview"
-                  :text="(row.original as any).preview"
+                  v-if="row.original.preview"
+                  :text="row.original.preview"
                   class="block min-w-0"
                 >
                   <span class="truncate block text-xs text-muted">{{
-                    (row.original as any).preview
+                    row.original.preview
                   }}</span>
                 </UTooltip>
                 <span v-else class="text-muted text-xs">—</span>
@@ -249,12 +250,12 @@ const sessionColumns: TableColumn<HermesSession>[] = [
 
               <template #model-cell="{ row }">
                 <UTooltip
-                  v-if="(row.original as any).model"
-                  :text="(row.original as any).model"
+                  v-if="row.original.model"
+                  :text="row.original.model"
                   class="block min-w-0"
                 >
                   <span class="truncate block font-mono text-xs">{{
-                    (row.original as any).model
+                    row.original.model
                   }}</span>
                 </UTooltip>
                 <span v-else class="text-muted text-xs">—</span>
@@ -262,17 +263,17 @@ const sessionColumns: TableColumn<HermesSession>[] = [
 
               <template #started_at-cell="{ row }">
                 <span class="font-mono text-xs whitespace-nowrap">
-                  {{ new Date((row.original as any).started_at * 1000).toLocaleDateString() }}
+                  {{ new Date(row.original.started_at * 1000).toLocaleDateString() }}
                 </span>
               </template>
 
               <template #last_active-cell="{ row }">
                 <UTooltip
-                  :text="new Date((row.original as any).last_active * 1000).toLocaleString()"
+                  :text="new Date(row.original.last_active * 1000).toLocaleString()"
                 >
                   <span class="font-mono text-xs whitespace-nowrap text-muted">
                     {{
-                      formatDistanceToNow((row.original as any).last_active * 1000, {
+                      formatDistanceToNow(row.original.last_active * 1000, {
                         addSuffix: true,
                       })
                     }}
@@ -282,18 +283,18 @@ const sessionColumns: TableColumn<HermesSession>[] = [
 
               <template #ended_at-cell="{ row }">
                 <span
-                  v-if="(row.original as any).ended_at"
+                  v-if="row.original.ended_at"
                   class="font-mono text-xs whitespace-nowrap text-muted"
                 >
-                  {{ new Date((row.original as any).ended_at * 1000).toLocaleDateString() }}
+                  {{ new Date(row.original.ended_at * 1000).toLocaleDateString() }}
                 </span>
                 <span v-else class="text-muted text-xs">—</span>
               </template>
 
               <template #archived-cell="{ row }">
                 <UBadge
-                  :label="(row.original as any).archived ? 'Yes' : 'No'"
-                  :color="(row.original as any).archived ? 'warning' : 'neutral'"
+                  :label="row.original.archived ? 'Yes' : 'No'"
+                  :color="row.original.archived ? 'warning' : 'neutral'"
                   variant="soft"
                   size="sm"
                 />

@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { isReasoningUIPart, isTextUIPart, isToolUIPart, getToolName } from "ai";
-import type { UIMessage } from "ai";
-import { isPartStreaming, isToolStreaming } from "@nuxt/ui/utils/ai";
+import { isReasoningUIPart, isTextUIPart, isToolUIPart, getToolName } from "ai"
+import type { UIMessage } from "ai"
+import { isPartStreaming, isToolStreaming } from "@nuxt/ui/utils/ai"
 
 defineProps<{
-  message: UIMessage;
-  editing: boolean;
-}>();
+  message: UIMessage
+  editing: boolean
+}>()
 
 const emit = defineEmits<{
-  save: [message: UIMessage, text: string];
-  cancelEdit: [];
-}>();
+  save: [message: UIMessage, text: string]
+  cancelEdit: []
+}>()
 </script>
 
 <template>

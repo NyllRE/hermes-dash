@@ -1,72 +1,12 @@
-// useHermes — composable for fetching data from the Hermes dashboard backend.
-// Requests go through the Nitro proxy at /api/hermes/* which forwards to the
-// Hermes dashboard backend (hermes dashboard).
+import type {
+  HermesStatus,
+  HermesSession,
+  HermesSessionDetail,
+  HermesModelInfo,
+  HermesMessage,
+  SessionStatus,
+} from "~/types/hermes";
 
-export interface HermesStatus {
-  version: string;
-  gateway_state: string | null;
-  gateway_platforms: Record<string, { connected: boolean; display_name?: string }>;
-  active_sessions: number;
-  active_agents: number;
-  auth_required: boolean;
-}
-
-export interface HermesSession {
-  id: string;
-  source: string;
-  model?: string;
-  title: string;
-  started_at: number;
-  ended_at?: number | null;
-  end_reason?: string | null;
-  last_active: number;
-  message_count: number;
-  preview?: string;
-  is_active: boolean;
-  archived?: boolean;
-  profile?: string;
-}
-
-/** Derive session status from API fields.
- *  Statuses:
- *    - running:   agent actively processing (within 5min of last activity)
- *    - waiting:   waiting for user input (inactive 5-30min)
- *    - stalled:   idle for 30min+, session hung or abandoned
- *    - ended:     session finished (ended_at set)
- */
-export function getSessionStatus(s: {
-  is_active: boolean;
-  ended_at?: number | null;
-  end_reason?: string | null;
-  last_active?: number;
-}): {
-  label: string;
-  color: "success" | "warning" | "neutral" | "info";
-  icon?: string;
-} {
-  const now = Date.now() / 1000;
-  const lastActive = s.last_active || 0;
-
-  if (s.ended_at) {
-    return { label: "ended", color: "neutral" };
-  }
-  if (s.is_active) {
-    return { label: "running", color: "success", icon: "svg-spinners:blocks-wave" };
-  }
-  if (lastActive > 0 && now - lastActive < 1800) {
-    return { label: "waiting", color: "info", icon: "svg-spinners:bars-scale-fade" };
-  }
-  return { label: "stalled", color: "neutral", icon: "solar:sleeping-square-bold" };
-}
-
-export interface HermesModelInfo {
-  model: string;
-  provider: string;
-  auto_context_length: number;
-  effective_context_length: number;
-}
-
-// All requests go through the same-origin Nitro proxy.
 const API_PREFIX = "/api/hermes";
 
 async function hermesFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
@@ -88,6 +28,28 @@ async function hermesFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
   return res.json();
 }
 
+/** Derive session status from API fields. */
+export function getSessionStatus(s: {
+  is_active: boolean;
+  ended_at?: number | null;
+  end_reason?: string | null;
+  last_active?: number;
+}): SessionStatus {
+  const now = Date.now() / 1000;
+  const lastActive = s.last_active || 0;
+
+  if (s.ended_at) {
+    return { label: "ended", color: "neutral" };
+  }
+  if (s.is_active) {
+    return { label: "running", color: "success", icon: "svg-spinners:blocks-wave" };
+  }
+  if (lastActive > 0 && now - lastActive < 1800) {
+    return { label: "waiting", color: "info", icon: "svg-spinners:bars-scale-fade" };
+  }
+  return { label: "stalled", color: "neutral", icon: "solar:sleeping-square-bold" };
+}
+
 /**
  * Reactive status snapshot — gateway health, active sessions, platforms.
  */
@@ -101,9 +63,9 @@ export function useHermesStatus() {
     error.value = null;
     try {
       data.value = await hermesFetch<HermesStatus>("/status", signal);
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (signal?.aborted) return;
-      error.value = e.message;
+      error.value = e instanceof Error ? e.message : String(e);
     } finally {
       pending.value = false;
     }
@@ -130,9 +92,9 @@ export function useHermesSessions(limit = 10) {
         `/sessions?limit=${limit}&order=recent`,
         signal,
       );
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (signal?.aborted) return;
-      error.value = e.message;
+      error.value = e instanceof Error ? e.message : String(e);
     } finally {
       pending.value = false;
     }
@@ -156,9 +118,9 @@ export function useHermesModel() {
     error.value = null;
     try {
       data.value = await hermesFetch<HermesModelInfo>("/model/info", signal);
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (signal?.aborted) return;
-      error.value = e.message;
+      error.value = e instanceof Error ? e.message : String(e);
     } finally {
       pending.value = false;
     }
@@ -167,25 +129,6 @@ export function useHermesModel() {
   if (import.meta.client) refresh();
 
   return { data, error, pending, refresh };
-}
-
-export interface HermesMessage {
-  id: number;
-  session_id: string;
-  role: "user" | "assistant" | "system" | "tool";
-  content: string | null;
-  tool_calls?: any[] | null;
-  tool_call_id?: string | null;
-  tool_name?: string | null;
-  timestamp: number;
-  token_count?: number | null;
-  finish_reason?: string | null;
-  reasoning?: string | null;
-  reasoning_content?: string | null;
-}
-
-export interface HermesSessionDetail extends HermesSession {
-  messages?: HermesMessage[];
 }
 
 /**
@@ -204,9 +147,9 @@ export function useHermesSessionMessages(sessionId: string) {
         `/sessions/${encodeURIComponent(sessionId)}/messages`,
         signal,
       );
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (signal?.aborted) return;
-      error.value = e.message;
+      error.value = e instanceof Error ? e.message : String(e);
     } finally {
       pending.value = false;
     }
@@ -231,9 +174,9 @@ export function useHermesSession(sessionId: string) {
         `/sessions/${encodeURIComponent(sessionId)}`,
         signal,
       );
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (signal?.aborted) return;
-      error.value = e.message;
+      error.value = e instanceof Error ? e.message : String(e);
     } finally {
       pending.value = false;
     }

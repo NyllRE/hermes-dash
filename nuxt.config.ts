@@ -32,8 +32,17 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    // spyglass ingest needs no CSRF — it's a dev-only debug endpoint
-    "/_spyglass/ingest": { csurf: false } as any,
+    // spyglass ingest needs no CSRF — it's a dev-only debug endpoint.
+    // nuxt-csurf reads this `csurf: false` rule at runtime; its nitro type
+    // augmentation isn't visible to `nuxt typecheck` (transitive dep under
+    // pnpm), so narrow through `unknown` to a loose record.
+    "/_spyglass/ingest": { csurf: false } as unknown as Record<string, unknown>,
+  },
+
+  csurf: {
+    // nuxt-csurf default is ["POST", "PUT", "PATCH"]; DELETE is protected
+    // too (chat/upload deletion endpoints).
+    methodsToProtect: ["POST", "PUT", "PATCH", "DELETE"],
   },
 
   hub: {

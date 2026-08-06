@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { UIMessage } from "ai";
+import type { UIMessage } from "ai"
 
 const props = defineProps<{
-  message: UIMessage;
-  text: string;
-}>();
+  message: UIMessage
+  text: string
+}>()
 
 const emit = defineEmits<{
-  save: [message: UIMessage, text: string];
-  cancel: [];
-}>();
+  save: [message: UIMessage, text: string]
+  cancel: []
+}>()
 
-const editingText = ref(props.text);
+const editingText = ref(props.text)
 </script>
 
 <template>

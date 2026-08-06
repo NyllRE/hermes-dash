@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { Chat } from "@ai-sdk/vue";
-import { DefaultChatTransport } from "ai";
-import type { UIMessage } from "ai";
+import { Chat } from "@ai-sdk/vue"
+import { DefaultChatTransport } from "ai"
+import type { UIMessage } from "ai"
 
-const route = useRoute();
-const toast = useToast();
-const { model } = useModels();
-const { csrf, headerName } = useCsrf();
+const route = useRoute()
+const toast = useToast()
+const { model } = useModels()
+const { csrf, headerName } = useCsrf()
 
 const { data } = await useFetch(`/api/chats/${route.params.id}`, {
   key: `chat-${route.params.id}`,
-  cache: "force-cache",
-});
+  cache: "force-cache"
+})
 
-const isOwner = computed(() => data.value?.isOwner ?? false);
-const visibility = ref<"public" | "private">(data.value?.visibility ?? "private");
-const title = ref<string | null>(data.value?.title ?? null);
+const isOwner = computed(() => data.value?.isOwner ?? false)
+const visibility = ref<"public" | "private">(data.value?.visibility ?? "private")
+const title = ref<string | null>(data.value?.title ?? null)
 
 watch(
   () => data.value?.title,
   (next) => {
-    title.value = next ?? null;
-  },
-);
+    title.value = next ?? null
+  }
+)
 
-const { dropzoneRef, dragging, open, files, uploading, uploadedFiles, removeFile, clearFiles } =
-  useFileUploadWithStatus(route.params.id as string);
+const { dropzoneRef, dragging, open, files, uploading, uploadedFiles, removeFile, clearFiles }
+  = useFileUploadWithStatus(route.params.id as string)
 
 const { data: votes } = await useLazyFetch(`/api/chats/${route.params.id}/votes`, {
-  immediate: isOwner.value,
-});
+  immediate: isOwner.value
+})
 
-const input = ref("");
+const input = ref("")
 
 const chat = new Chat({
   id: data.value?.id,
@@ -40,24 +40,24 @@ const chat = new Chat({
     api: `/api/chats/${data.value?.id}`,
     headers: { [headerName]: csrf },
     body: {
-      model: model.value,
-    },
+      model: model.value
+    }
   }),
   onData: async (dataPart) => {
     if (dataPart.type === "data-chat-title") {
-      await refreshNuxtData("chats");
-      const chatsCache = useNuxtData<{ id: string; label: string }[]>("chats");
-      const updated = chatsCache.data.value?.find((c) => c.id === data.value!.id);
+      await refreshNuxtData("chats")
+      const chatsCache = useNuxtData<{ id: string, label: string }[]>("chats")
+      const updated = chatsCache.data.value?.find(c => c.id === data.value!.id)
       if (updated && updated.label !== "Untitled") {
-        title.value = updated.label;
+        title.value = updated.label
       }
     }
   },
   onError(error) {
-    let message = error.message;
+    let message = error.message
     if (typeof message === "string" && message[0] === "{") {
       try {
-        message = JSON.parse(message).message || message;
+        message = JSON.parse(message).message || message
       } catch {
         // keep original message on malformed JSON
       }
@@ -67,72 +67,72 @@ const chat = new Chat({
       description: message,
       icon: "i-lucide-alert-circle",
       color: "error",
-      duration: 0,
-    });
-  },
-});
+      duration: 0
+    })
+  }
+})
 
 // ── Auto-scroll to bottom ──
-const scrollContainer = ref<HTMLElement | null>(null);
+const scrollContainer = ref<HTMLElement | null>(null)
 
 function scrollToBottom() {
   nextTick(() => {
     if (scrollContainer.value) {
-      scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight;
+      scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
     } else {
       // Fallback: find the scrollable parent of UChatMessages
-      const el = document.querySelector("[data-autoscroll]");
+      const el = document.querySelector("[data-autoscroll]")
       if (el) {
-        const parent = el.closest(".overflow-y-auto, [data-dash-body]") as HTMLElement | null;
-        parent?.scrollTo({ top: parent.scrollHeight, behavior: "smooth" });
+        const parent = el.closest(".overflow-y-auto, [data-dash-body]") as HTMLElement | null
+        parent?.scrollTo({ top: parent.scrollHeight, behavior: "smooth" })
       }
     }
-  });
+  })
 }
 
 // Watch messages for streaming updates and scroll on each change
-watch(chat.messages, () => scrollToBottom(), { deep: true });
+watch(chat.messages, () => scrollToBottom(), { deep: true })
 
 // Scroll when streaming starts/stops (new message submitted)
 watch(
   () => chat.status,
   () => {
     if (chat.status === "submitted" || chat.status === "streaming") {
-      scrollToBottom();
+      scrollToBottom()
     }
-  },
-);
+  }
+)
 
 // Scroll on mount if there are already messages
 onMounted(() => {
-  scrollToBottom();
+  scrollToBottom()
   // Also check after initial render
-  setTimeout(scrollToBottom, 300);
+  setTimeout(scrollToBottom, 300)
 
   if (isOwner.value && data.value?.messages.length === 1) {
-    chat.regenerate();
+    chat.regenerate()
   }
-});
+})
 
 async function handleSubmit(e: Event) {
-  e.preventDefault();
+  e.preventDefault()
   if (input.value.trim() && !uploading.value) {
     chat.sendMessage({
       text: input.value,
-      files: uploadedFiles.value.length > 0 ? uploadedFiles.value : undefined,
-    });
-    input.value = "";
-    clearFiles();
-    scrollToBottom();
+      files: uploadedFiles.value.length > 0 ? uploadedFiles.value : undefined
+    })
+    input.value = ""
+    clearFiles()
+    scrollToBottom()
   }
 }
 
-const editingMessageId = ref<string | null>(null);
+const editingMessageId = ref<string | null>(null)
 
 function startEdit(message: UIMessage) {
-  if (editingMessageId.value) return;
+  if (editingMessageId.value) return
 
-  editingMessageId.value = message.id;
+  editingMessageId.value = message.id
 }
 
 async function saveEdit(message: UIMessage, text: string) {
@@ -140,19 +140,19 @@ async function saveEdit(message: UIMessage, text: string) {
     await $fetch(`/api/chats/${data.value!.id}/messages`, {
       method: "DELETE",
       headers: { [headerName]: csrf },
-      body: { messageId: message.id, type: "edit" },
-    });
+      body: { messageId: message.id, type: "edit" }
+    })
   } catch {
     toast.add({
       description: "Failed to save edit.",
       icon: "i-lucide-alert-circle",
-      color: "error",
-    });
-    return;
+      color: "error"
+    })
+    return
   }
 
-  editingMessageId.value = null;
-  chat.sendMessage({ text, messageId: message.id });
+  editingMessageId.value = null
+  chat.sendMessage({ text, messageId: message.id })
 }
 
 async function regenerateMessage(message: UIMessage) {
@@ -160,52 +160,52 @@ async function regenerateMessage(message: UIMessage) {
     await $fetch(`/api/chats/${data.value!.id}/messages`, {
       method: "DELETE",
       headers: { [headerName]: csrf },
-      body: { messageId: message.id, type: "regenerate" },
-    });
+      body: { messageId: message.id, type: "regenerate" }
+    })
   } catch {
     toast.add({
       description: "Failed to regenerate.",
       icon: "i-lucide-alert-circle",
-      color: "error",
-    });
-    return;
+      color: "error"
+    })
+    return
   }
 
-  chat.regenerate({ messageId: message.id });
+  chat.regenerate({ messageId: message.id })
 }
 
 function getVote(messageId: string) {
-  const vote = votes.value?.find((v) => v.messageId === messageId);
-  if (!vote) return null;
-  return !!vote.isUpvoted;
+  const vote = votes.value?.find(v => v.messageId === messageId)
+  if (!vote) return null
+  return !!vote.isUpvoted
 }
 
 async function vote(message: UIMessage, isUpvoted: boolean) {
-  const snapshot = (votes.value ?? []).map((v) => ({ ...v }));
-  const toggling = getVote(message.id) === isUpvoted;
-  const next = toggling ? null : isUpvoted;
+  const snapshot = (votes.value ?? []).map(v => ({ ...v }))
+  const toggling = getVote(message.id) === isUpvoted
+  const next = toggling ? null : isUpvoted
 
-  votes.value =
-    next === null
-      ? (votes.value ?? []).filter((v) => v.messageId !== message.id)
+  votes.value
+    = next === null
+      ? (votes.value ?? []).filter(v => v.messageId !== message.id)
       : [
-          ...(votes.value ?? []).filter((v) => v.messageId !== message.id),
-          { chatId: data.value!.id, messageId: message.id, isUpvoted: next },
-        ];
+          ...(votes.value ?? []).filter(v => v.messageId !== message.id),
+          { chatId: data.value!.id, messageId: message.id, isUpvoted: next }
+        ]
 
   try {
     await $fetch(`/api/chats/${data.value!.id}/votes`, {
       method: "POST",
       headers: { [headerName]: csrf },
-      body: next === null ? { messageId: message.id } : { messageId: message.id, isUpvoted: next },
-    });
+      body: next === null ? { messageId: message.id } : { messageId: message.id, isUpvoted: next }
+    })
   } catch {
-    votes.value = snapshot;
+    votes.value = snapshot
     toast.add({
       description: "Failed to save vote",
       icon: "i-lucide-alert-circle",
-      color: "error",
-    });
+      color: "error"
+    })
   }
 }
 </script>
