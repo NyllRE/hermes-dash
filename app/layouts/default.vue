@@ -1,23 +1,7 @@
 <script setup lang="ts">
-import type { DropdownMenuItem } from "@nuxt/ui"
-
 const { loggedIn, openInPopup } = useUserSession()
-const { renameChat, deleteChat } = useChatActions()
 
 const sidebarOpen = ref(false)
-const searchOpen = ref(false)
-
-const { data: chats, refresh: refreshChats } = await useFetch("/api/chats", {
-  key: "chats",
-  transform: data =>
-    data.map(chat => ({
-      id: chat.id,
-      label: chat.title || "Untitled",
-      to: `/chat/${chat.id}`,
-      icon: "i-lucide-message-circle",
-      createdAt: chat.createdAt
-    }))
-})
 
 // ── Hermes sessions sidebar ──
 const { data: hermesSessions, refresh: refreshHermes } = useHermesSessions(50)
@@ -50,15 +34,12 @@ const hermesNavItems = computed(() => {
   })
 })
 
-onNuxtReady(async () => {
-  const first10 = (chats.value || []).slice(0, 10)
-  for (const chat of first10) {
-    await $fetch(`/api/chats/${chat.id}`)
-  }
+onNuxtReady(() => {
+  refreshHermes()
 })
 
 watch(loggedIn, () => {
-  refreshChats()
+  refreshHermes()
   sidebarOpen.value = false
 })
 
@@ -80,45 +61,6 @@ watch(
   }
 )
 
-const { groups } = useChats(chats)
-
-const items = computed(() =>
-  groups.value?.flatMap((group) => {
-    return [
-      {
-        label: group.label,
-        type: "label" as const
-      },
-      ...group.items.map(item => ({
-        ...item,
-        slot: "chat" as const,
-        icon: undefined,
-        class: item.label === "Untitled" ? "text-muted" : ""
-      }))
-    ]
-  })
-)
-
-function getChatActions(item: { id: string, label: string }): DropdownMenuItem[][] {
-  return [
-    [
-      {
-        label: "Rename",
-        icon: "i-lucide-pencil",
-        onSelect: () => renameChat(item.id, item.label === "Untitled" ? "" : item.label)
-      }
-    ],
-    [
-      {
-        label: "Delete",
-        icon: "i-lucide-trash",
-        color: "error" as const,
-        onSelect: () => deleteChat(item.id)
-      }
-    ]
-  ]
-}
-
 defineShortcuts({
   meta_o: () => {
     navigateTo("/")
@@ -127,7 +69,7 @@ defineShortcuts({
 </script>
 
 <template>
-  <UDashboardGroup unit="rem">
+  <UDashboardGroup>
     <UDashboardSidebar
       id="default"
       v-model:open="sidebarOpen"
@@ -156,18 +98,10 @@ defineShortcuts({
         <UNavigationMenu
           :items="[
             {
-              label: 'New chat',
-              to: '/chat',
+              label: 'Home',
+              to: '/',
               kbds: ['meta', 'o'],
-              icon: 'i-lucide-circle-plus',
-            },
-            {
-              label: 'Search',
-              icon: 'i-lucide-search',
-              kbds: ['meta', 'k'],
-              onSelect: () => {
-                searchOpen = true;
-              },
+              icon: 'i-lucide-house',
             },
             {
               label: 'Debug',
@@ -192,37 +126,6 @@ defineShortcuts({
                 class="bg-accented/50"
               />
             </div>
-          </template>
-        </UNavigationMenu>
-
-        <UNavigationMenu
-          v-if="!collapsed"
-          :items="items"
-          :collapsed="collapsed"
-          orientation="vertical"
-          :ui="{
-            link: 'overflow-hidden pr-7.5',
-            linkTrailing:
-              'translate-x-full group-hover:translate-x-0 group-has-data-[state=open]:translate-x-0 transition-transform ms-0 absolute inset-e-px',
-          }"
-        >
-          <template #chat-trailing="{ item }">
-            <UDropdownMenu
-              :items="getChatActions(item as { id: string; label: string })"
-              :content="{ align: 'end' }"
-            >
-              <UButton
-                as="div"
-                icon="i-lucide-ellipsis"
-                color="neutral"
-                variant="link"
-                size="sm"
-                class="rounded-[5px] hover:bg-accented/50 focus-visible:bg-accented/50 data-[state=open]:bg-accented/50"
-                aria-label="Chat actions"
-                tabindex="-1"
-                @click.stop.prevent
-              />
-            </UDropdownMenu>
           </template>
         </UNavigationMenu>
 
@@ -278,29 +181,13 @@ defineShortcuts({
       </template>
     </UDashboardSidebar>
 
-    <UDashboardSearch
-      v-model:open="searchOpen"
-      placeholder="Search chats..."
-      :groups="[
-        {
-          id: 'links',
-          items: [
-            {
-              label: 'New chat',
-              to: '/',
-              icon: 'i-lucide-circle-plus',
-              kbds: ['meta', 'o'],
-            },
-          ],
-        },
-        ...groups,
-      ]"
-    />
-
-    <div
-      class="flex-1 flex m-4 lg:ml-0 rounded-lg ring ring-default bg-default/75 shadow min-w-0 overflow-hidden"
-    >
-      <slot />
+    <div class="flex-1 min-w-0 flex flex-col lg:ml-0 mr-3">
+      <div id="above-content" />
+      <div
+        class="flex rounded-xl my-3 p-2 ring ring-default bg-default/75 shadow min-w-0 h-full overflow-hidden w-full"
+      >
+        <slot />
+      </div>
     </div>
   </UDashboardGroup>
 </template>

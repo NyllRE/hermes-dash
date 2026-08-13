@@ -1,6 +1,6 @@
 <template>
   <UDashboardNavbar
-    class="absolute top-0 inset-x-0 border-b-0 z-10 backdrop-blur lg:backdrop-blur-md bg-default/50 pointer-events-none sm:px-4"
+    class="w-full h-min inset-x-0 border-b-0 z-10 pointer-events-none pt-2 sm:px-2"
     :ui="{ left: 'pointer-events-auto min-w-0', right: 'pointer-events-auto' }"
   >
     <template #left>

@@ -6,6 +6,8 @@ import type {
   HermesMessage,
   SessionStatus,
 } from "~/types/hermes";
+import { navigateTo } from "#app";
+import { markUnauthorized } from "~/middleware/auth.global";
 
 const API_PREFIX = "/api/hermes";
 
@@ -16,6 +18,15 @@ async function hermesFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
     signal,
   });
   if (!res.ok) {
+    // Unauthenticated (missing/expired token): bounce to the login page.
+    // hermesFetch never runs on /login itself, but guard the pathname anyway
+    // so a stray 401 there can't cause a redirect loop.
+    if (res.status === 401 && typeof window !== "undefined" && window.location.pathname !== "/login") {
+      // Reset the global auth gate's cached verdict so the next navigation
+      // re-redirects to /login instead of trusting the stale positive cache.
+      markUnauthorized();
+      await navigateTo("/login");
+    }
     let detail = res.statusText;
     try {
       const body = await res.json();
@@ -140,7 +151,11 @@ export function useHermesSessionMessages(sessionId: string) {
   const pending = ref(true);
 
   async function refresh(signal?: AbortSignal) {
-    pending.value = true;
+    // pending gates only the initial load. Once data exists, background
+    // refreshes (polling) update data in place without flipping the
+    // loading state — otherwise every poll tick unmounts the chat UI
+    // to the loading screen (black flash) and resets scroll/state.
+    if (data.value === null) pending.value = true;
     error.value = null;
     try {
       data.value = await hermesFetch<{ session_id: string; messages: HermesMessage[] }>(
@@ -167,7 +182,9 @@ export function useHermesSession(sessionId: string) {
   const pending = ref(true);
 
   async function refresh(signal?: AbortSignal) {
-    pending.value = true;
+    // Same as useHermesSessionMessages: pending only gates the initial
+    // load; background refreshes update in place without a loading flash.
+    if (data.value === null) pending.value = true;
     error.value = null;
     try {
       data.value = await hermesFetch<HermesSessionDetail>(

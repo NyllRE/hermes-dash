@@ -1,7 +1,9 @@
 // Proxy /api/hermes/* to the Hermes dashboard backend.
-// Auto-discovers the _SESSION_TOKEN from the dashboard's SPA HTML so no
-// env var ceremony is needed — works the same way the official dashboard
-// SPA gets its token.
+// The Hermes session token is read from NUXT_HERMES_SESSION_TOKEN (injected
+// server-side only, never sent to the browser). When it is unset — e.g. local
+// development — the token is auto-discovered from the dashboard's SPA HTML as
+// a fallback (requires the dashboard to be reachable at the configured
+// hermesApiUrl, typically the loopback bind).
 import { assertDashboardAccess } from "../../utils/dashboardAuth";
 
 let discoveredToken: string | null = null;
@@ -42,8 +44,12 @@ export default defineEventHandler(async (event) => {
   const path = getRouterParam(event, "path") || "";
   const target = `${hermesApiUrl}/api/${path}`;
 
-  // Discover token on first proxied request (lazy, cached after).
-  const token = event.context.hermesToken ?? (await discoverToken(hermesApiUrl));
+  // Prefer the env-configured session token; fall back to HTML discovery only
+  // when it is unset (dev convenience). The env token is never exposed to the
+  // browser — it is sent to the Hermes backend as a header only.
+  const envToken = process.env.NUXT_HERMES_SESSION_TOKEN;
+  const token =
+    envToken || event.context.hermesToken || (await discoverToken(hermesApiUrl));
   event.context.hermesToken = token;
 
   const query = getQuery(event);

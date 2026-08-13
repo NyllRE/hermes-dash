@@ -33,7 +33,10 @@ useSeoMeta({
     <NuxtLoadingIndicator color="var(--ui-primary)" />
 
     <NuxtLayout>
-      <NuxtPage />
+      <!-- :key forces a fresh page instance on param-only navigation
+           (/session/A -> /session/B), so sessionId is re-read from the route
+           and polling doesn't stay bound to the first session (B3). -->
+      <NuxtPage :key="$route.fullPath" />
     </NuxtLayout>
   </UApp>
 </template>

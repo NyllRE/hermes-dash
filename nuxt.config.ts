@@ -10,12 +10,11 @@ export default defineNuxtConfig({
     "nuxt-csurf",
     "nuxt-spyglass",
   ],
+  ssr: false,
 
   devtools: {
     enabled: true,
   },
-
-  ssr: false,
 
   css: ["~/assets/css/main.css"],
 
@@ -28,6 +27,9 @@ export default defineNuxtConfig({
   nitro: {
     experimental: {
       openAPI: true,
+      // Required for server/routes/ws.ts — the node/dev listeners only attach
+      // the crossws upgrade handler when this flag is on.
+      websocket: true,
     },
   },
 
